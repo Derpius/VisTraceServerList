@@ -1,5 +1,7 @@
+from dataclasses import dataclass
 import os
 from datetime import datetime
+
 from dotenv import load_dotenv
 
 import asyncio
@@ -7,6 +9,18 @@ import discord
 
 from sourceserver.sourceserver import SourceServer
 from sourceserver.exceptions import SourceError
+
+@dataclass
+class ServerInfo:
+	constring: str
+
+	name:       str = "Failed to connect"
+	flag:       str = ":warning:"
+	maxPlayers: int = 0
+	gamemode:   str = "unknown"
+	map:        str = "unknown"
+
+	version:    str = "version unknown"
 
 load_dotenv()
 
@@ -35,9 +49,9 @@ except ValueError:
 	print("VTSERVERLIST_UPDATE_RATE is not a number")
 	exit(-1)
 
-SERVERS = []
+SERVERS: list[ServerInfo] = []
 with open(os.path.join(os.path.dirname(__file__), "servers.cfg"), "r") as f:
-	SERVERS = [line for line in f if len(line) > 0]
+	SERVERS = [ServerInfo(line) for line in f if len(line) > 0]
 
 intents = discord.Intents.default()
 
@@ -61,34 +75,40 @@ async def updateServers():
 
 			embed = discord.Embed(
 				colour=discord.Colour.from_rgb(255, 150, 0),
-				title="Servers running VisTrace"
+				title="Servers running VisTrace",
+				timestamp=datetime.utcnow()
 			)
-			embed.set_footer(text=f"Last updated: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+			embed.set_footer(text=f"Last updated")
 
 			for server in SERVERS:
 				try:
-					serverCon = SourceServer(server)
+					serverCon = SourceServer(server.constring)
 					info = serverCon.info
 					players = serverCon.getPlayers()
 					rules = serverCon.rules
 				except SourceError as e:
-					embed.add_field(name=f"Failed to connect to {server}", value=e.message, inline=False)
+					players = ("?", ())
 				else:
+					server.name = info["name"]
+					server.maxPlayers = info["max_players"]
+					server.gamemode = info["game"]
+					server.map = info["map"]
+
 					locale = None
 					for keyword in info["keywords"].split(" "):
 						kv = keyword.split(":")
 						if kv[0] == "loc":
 							locale = kv[1]
 							break
-					flag = ":no_entry_sign:" if locale is None else f":flag_{locale}:"
+					server.flag = ":no_entry_sign:" if locale is None else f":flag_{locale}:"
 
-					version = "older than v0.12"
+					server.version = "older than v0.12"
 					if "vistrace_version" in rules:
-						version = f"v{rules['vistrace_version']}"
-
+						server.version = f"v{rules['vistrace_version']}"
+				finally:
 					embed.add_field(
-						name=f"{flag} {info['name']}",
-						value=f"{players[0]}/{info['max_players']} Playing {info['game']} on {info['map']} | VisTrace {version}",
+						name=f"{server.flag} {server.name}",
+						value=f"{players[0]}/{server.maxPlayers} Playing {server.gamemode} on {server.map} | VisTrace {server.version}",
 						inline=False
 					)
 
