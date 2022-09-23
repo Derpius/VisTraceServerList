@@ -36,7 +36,7 @@ except ValueError:
 	exit(-1)
 
 SERVERS = []
-with open("servers.cfg", "r") as f:
+with open(os.path.join(os.path.dirname(__file__), "servers.cfg"), "r") as f:
 	SERVERS = [line for line in f if len(line) > 0]
 
 intents = discord.Intents.default()
