@@ -86,7 +86,10 @@ async def updateServers():
 					info = serverCon.info
 					rules = serverCon.rules
 				except SourceError as e:
-					info = {"players": "?"}
+					info = {
+						"players": 0,
+						"bots": 0
+					}
 				else:
 					server.name = info["name"]
 					server.maxPlayers = info["max_players"]
@@ -107,7 +110,7 @@ async def updateServers():
 				finally:
 					embed.add_field(
 						name=f"{server.flag} {server.name}",
-						value=f"{info['players']}/{server.maxPlayers} Playing {server.gamemode} on {server.map} | VisTrace {server.version}",
+						value=f"{info['players'] - info['bots']}/{server.maxPlayers - info['bots']} Playing {server.gamemode} on {server.map} | VisTrace {server.version}",
 						inline=False
 					)
 
