@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 import os
 from datetime import datetime
+import sys
+import signal
 
 from dotenv import load_dotenv
 
@@ -9,6 +11,12 @@ import discord
 
 from sourceserver.sourceserver import SourceServer
 from sourceserver.exceptions import SourceError
+
+def onExit(_signo, _stack_frame):
+	sys.exit(0)
+
+signal.signal(signal.SIGINT, onExit)
+signal.signal(signal.SIGTERM, onExit)
 
 @dataclass
 class ServerInfo:
